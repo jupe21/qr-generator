@@ -2,9 +2,6 @@
   "name": "qr-styler",
   "version": "1.0.0",
   "description": "QR generator",
-  "scripts": {
-    "web": "node server.js"
-  },
   "license": "MIT",
   "dependencies": {
     "qr-code-styling": "^1.6.0-rc.1"

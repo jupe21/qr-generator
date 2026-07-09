@@ -1,274 +1,362 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="sl">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>QR generator</title>
-<style>
-  :root {
-    --bg: #0f1117; --panel: #181c25; --border: #2a3040;
-    --text: #e6e9f0; --muted: #8b93a7; --accent: #0ea5e9; --err: #f87171;
-  }
-  * { box-sizing: border-box; }
-  [hidden] { display: none !important; }
-  body {
-    margin: 0; font-family: system-ui, sans-serif; background: var(--bg);
-    color: var(--text); min-height: 100vh;
-  }
-  .wrap { max-width: 1000px; margin: 0 auto; padding: 24px 16px; }
-  h1 { font-size: 22px; margin: 0 0 20px; }
-  h1 span { color: var(--accent); }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
-  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
-  label.field { display: block; margin-bottom: 14px; font-size: 13px; color: var(--muted); }
-  .field > .row { margin-top: 5px; }
-  input[type=text], input[type=number], select {
-    width: 100%; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--border);
-    background: var(--bg); color: var(--text); font-size: 14px;
-  }
-  input[type=color] {
-    width: 42px; height: 38px; padding: 2px; border: 1px solid var(--border);
-    border-radius: 8px; background: var(--bg); cursor: pointer; flex-shrink: 0;
-  }
-  .row { display: flex; gap: 8px; align-items: center; }
-  .row input[type=text] { flex: 1; }
-  .radios { display: flex; gap: 14px; margin-top: 5px; }
-  .radios label { display: flex; gap: 5px; align-items: center; font-size: 14px; color: var(--text); cursor: pointer; }
-  .subfield { margin-top: 8px; }
-  .check { display: flex; gap: 7px; align-items: center; font-size: 13px; color: var(--muted); margin-bottom: 14px; cursor: pointer; }
-  button#run {
-    width: 100%; padding: 13px; font-size: 16px; font-weight: 600; border: 0;
-    border-radius: 10px; background: var(--accent); color: #06121a; cursor: pointer;
-  }
-  button#run:hover { filter: brightness(1.1); }
-  button#run:disabled { opacity: .5; cursor: wait; }
-  .result { text-align: center; }
-  .result img {
-    max-width: 100%; max-height: 420px; border-radius: 10px;
-    background: repeating-conic-gradient(#222 0% 25%, #333 0% 50%) 0 0/16px 16px;
-  }
-  .path { font-size: 12px; color: var(--muted); word-break: break-all; margin-top: 10px; }
-  .error { color: var(--err); font-size: 14px; margin-top: 10px; white-space: pre-wrap; }
-  a.dl { color: var(--accent); font-size: 14px; display: inline-block; margin-top: 8px; }
-  .placeholder { color: var(--muted); font-size: 14px; padding: 60px 0; }
-</style>
-</head>
-<body>
-<div class="wrap">
-  <h1><span>QR</span> generator</h1>
-  <div class="grid">
-    <div class="panel">
-      <label class="field">URL / vsebina kode *
-        <div class="row"><input type="text" id="url" placeholder="https://oslea.si"></div>
-      </label>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QR Generator</title>
 
-      <label class="field">Tema (preset)
-        <div class="row"><select id="theme"><option value="">— brez —</option></select></div>
-      </label>
+    <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.9.2/lib/qr-code-styling.js"></script>
 
-      <label class="field">Sredina
-        <div class="radios">
-          <label><input type="radio" name="center" value="none" checked> Nič</label>
-          <label><input type="radio" name="center" value="image"> Slika</label>
-          <label><input type="radio" name="center" value="text"> Tekst</label>
-        </div>
-        <div class="subfield" id="centerImageField" hidden>
-          <input type="file" id="logoFile" accept="image/png,image/jpeg,image/svg+xml,image/webp">
-        </div>
-        <div class="subfield" id="centerTextField" hidden>
-          <input type="text" id="centerText" placeholder="npr. OSLEA" maxlength="12">
-        </div>
-      </label>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #0b1220;
+        color: white;
+      }
 
-      <label class="field">Barva pik (hex)
+      .wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 32px 20px;
+        display: grid;
+        grid-template-columns: 1fr 420px;
+        gap: 28px;
+      }
+
+      .card {
+        background: #111827;
+        border: 1px solid #263244;
+        border-radius: 18px;
+        padding: 22px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+      }
+
+      h1 {
+        margin: 0 0 18px;
+        font-size: 34px;
+      }
+
+      label {
+        display: block;
+        margin-top: 14px;
+        margin-bottom: 6px;
+        color: #cbd5e1;
+        font-size: 14px;
+      }
+
+      input,
+      select {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px;
+        border-radius: 10px;
+        border: 1px solid #334155;
+        background: #0f172a;
+        color: white;
+        font-size: 15px;
+      }
+
+      input[type="color"] {
+        height: 45px;
+        padding: 4px;
+      }
+
+      button {
+        margin-top: 18px;
+        width: 100%;
+        padding: 13px;
+        border: 0;
+        border-radius: 12px;
+        background: #22d3ee;
+        color: #08111f;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 15px;
+      }
+
+      button.secondary {
+        background: #334155;
+        color: white;
+      }
+
+      #qr {
+        background: white;
+        border-radius: 18px;
+        padding: 18px;
+        min-height: 360px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: auto;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .hint {
+        margin-top: 14px;
+        color: #94a3b8;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      @media (max-width: 900px) {
+        .wrap {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <h1>QR Generator</h1>
+
+        <label>URL / vsebina QR kode</label>
+        <input id="url" value="https://n3x7.si" placeholder="https://..." />
+
         <div class="row">
-          <input type="color" id="colorPick" value="#1e293b">
-          <input type="text" id="color" value="#1e293b">
-        </div>
-      </label>
+          <div>
+            <label>Velikost</label>
+            <input id="size" type="number" value="1000" min="200" max="3000" />
+          </div>
 
-      <label class="check"><input type="checkbox" id="useGradient"> Gradient (druga barva)</label>
-      <label class="field" id="gradientField" hidden>Druga barva gradienta (hex)
+          <div>
+            <label>Stil pik</label>
+            <select id="dotStyle">
+              <option value="rounded">Rounded</option>
+              <option value="dots">Dots</option>
+              <option value="square">Square</option>
+              <option value="classy">Classy</option>
+              <option value="classy-rounded">Classy rounded</option>
+              <option value="extra-rounded">Extra rounded</option>
+            </select>
+          </div>
+        </div>
+
         <div class="row">
-          <input type="color" id="gradient2Pick" value="#8b5cf6">
-          <input type="text" id="gradient2" value="#8b5cf6">
-        </div>
-      </label>
+          <div>
+            <label>Barva pik</label>
+            <input id="color" type="color" value="#1e293b" />
+          </div>
 
-      <label class="field">Barva ozadja (hex)
+          <div>
+            <label>Barva ozadja</label>
+            <input id="bg" type="color" value="#ffffff" />
+          </div>
+        </div>
+
         <div class="row">
-          <input type="color" id="bgPick" value="#ffffff">
-          <input type="text" id="bg" value="#ffffff">
+          <div>
+            <label>Barva kotov</label>
+            <input id="cornerColor" type="color" value="#1e293b" />
+          </div>
+
+          <div>
+            <label>Druga barva gradienta</label>
+            <input id="gradient2" type="color" value="#8b5cf6" />
+          </div>
         </div>
-      </label>
 
-      <label class="check"><input type="checkbox" id="useCorner"> Posebna barva kotov</label>
-      <label class="field" id="cornerField" hidden>Barva kotov (hex)
-        <div class="row">
-          <input type="color" id="cornerColorPick" value="#1e293b">
-          <input type="text" id="cornerColor" value="#1e293b">
+        <label>
+          <input id="useGradient" type="checkbox" style="width: auto" />
+          Uporabi gradient
+        </label>
+
+        <label>Sredina QR kode</label>
+        <select id="centerType">
+          <option value="none">Brez</option>
+          <option value="text">Tekst</option>
+          <option value="image">Slika / logo</option>
+        </select>
+
+        <label>Tekst na sredini</label>
+        <input id="centerText" placeholder="npr. N7" />
+
+        <label>Logo / slika</label>
+        <input id="imageInput" type="file" accept="image/*" />
+
+        <label>Ime datoteke</label>
+        <input id="filename" value="qr-koda.png" />
+
+        <button onclick="generateQr()">Generiraj QR</button>
+        <button class="secondary" onclick="downloadQr()">Prenesi PNG</button>
+
+        <div class="hint">
+          Ta verzija dela direktno v brskalniku, zato na Vercelu ne potrebuje
+          serverja, canvasa ali serverless funkcij.
         </div>
-      </label>
+      </div>
 
-      <label class="field">Oblika pik
-        <div class="row"><select id="dotStyle">
-          <option value="square">Oglata</option>
-          <option value="dots">Okrogla (pike)</option>
-          <option value="rounded" selected>Zaobljena</option>
-          <option value="classy">Classy</option>
-          <option value="classy-rounded">Classy zaobljena</option>
-          <option value="extra-rounded">Ekstra zaobljena</option>
-        </select></div>
-      </label>
-
-      <label class="field">Velikost (px)
-        <div class="row"><input type="number" id="size" value="2000" min="100" max="4000" step="100"></div>
-      </label>
-
-      <label class="field">Ime datoteke (opcijsko)
-        <div class="row"><input type="text" id="filename" placeholder="qr-oslea (privzeto: časovni žig)"></div>
-      </label>
-
-      <button id="run">Zaženi</button>
-      <div class="error" id="error" hidden></div>
+      <div class="card">
+        <div id="qr"></div>
+      </div>
     </div>
 
-    <div class="panel result" id="result">
-      <div class="placeholder">Tu se prikaže generirana koda.</div>
-    </div>
-  </div>
-</div>
+    <script>
+      let qrCode = null;
+      let logoDataUrl = null;
 
-<script>
-const $ = (id) => document.getElementById(id);
+      const imageInput = document.getElementById("imageInput");
 
-// --- sinhronizacija color picker <-> hex text ---
-function syncColor(pickId, textId) {
-  const pick = $(pickId), text = $(textId);
-  pick.addEventListener("input", () => { text.value = pick.value; });
-  text.addEventListener("input", () => {
-    if (/^#[0-9a-fA-F]{6}$/.test(text.value.trim())) pick.value = text.value.trim();
-  });
-}
-syncColor("colorPick", "color");
-syncColor("bgPick", "bg");
-syncColor("cornerColorPick", "cornerColor");
-syncColor("gradient2Pick", "gradient2");
+      imageInput.addEventListener("change", () => {
+        const file = imageInput.files[0];
 
-// --- prikaži/skrij podpolja ---
-document.querySelectorAll('input[name=center]').forEach((r) =>
-  r.addEventListener("change", () => {
-    $("centerImageField").hidden = r.value !== "image" || !r.checked;
-    $("centerTextField").hidden = r.value !== "text" || !r.checked;
-    if (r.checked) {
-      $("centerImageField").hidden = r.value !== "image";
-      $("centerTextField").hidden = r.value !== "text";
-    }
-  }),
-);
-$("useGradient").addEventListener("change", (e) => { $("gradientField").hidden = !e.target.checked; });
-$("useCorner").addEventListener("change", (e) => { $("cornerField").hidden = !e.target.checked; });
+        if (!file) {
+          logoDataUrl = null;
+          return;
+        }
 
-// --- teme s strežnika ---
-let THEMES = {};
-fetch("/config").then((r) => r.json()).then((cfg) => {
-  THEMES = cfg.themes;
-  for (const name of Object.keys(THEMES)) {
-    const o = document.createElement("option");
-    o.value = name; o.textContent = name;
-    $("theme").appendChild(o);
-  }
-});
-$("theme").addEventListener("change", () => {
-  const t = THEMES[$("theme").value];
-  if (!t) return;
-  const setColor = (textId, pickId, val) => {
-    if (!val) return;
-    $(textId).value = val;
-    if (/^#[0-9a-fA-F]{6}$/.test(val)) $(pickId).value = val;
-  };
-  if (t.gradient) {
-    const [c1, c2] = t.gradient.split(",");
-    setColor("color", "colorPick", c1.trim());
-    setColor("gradient2", "gradient2Pick", c2.trim());
-    $("useGradient").checked = true;
-    $("gradientField").hidden = false;
-  } else if (t.color) {
-    setColor("color", "colorPick", t.color);
-    $("useGradient").checked = false;
-    $("gradientField").hidden = true;
-  }
-  setColor("bg", "bgPick", t.bg);
-  if (t.cornerColor) {
-    setColor("cornerColor", "cornerColorPick", t.cornerColor);
-    $("useCorner").checked = true;
-    $("cornerField").hidden = false;
-  }
-  if (t.dotStyle) $("dotStyle").value = t.dotStyle;
-});
+        const reader = new FileReader();
 
-// --- generiranje ---
-function fileToDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const fr = new FileReader();
-    fr.onload = () => resolve(fr.result);
-    fr.onerror = reject;
-    fr.readAsDataURL(file);
-  });
-}
+        reader.onload = () => {
+          logoDataUrl = reader.result;
+        };
 
-$("run").addEventListener("click", async () => {
-  const errBox = $("error");
-  errBox.hidden = true;
-  const centerType = document.querySelector("input[name=center]:checked").value;
+        reader.readAsDataURL(file);
+      });
 
-  const body = {
-    url: $("url").value,
-    color: $("color").value.trim(),
-    bg: $("bg").value.trim(),
-    cornerColor: $("useCorner").checked ? $("cornerColor").value.trim() : "",
-    gradient2: $("useGradient").checked ? $("gradient2").value.trim() : "",
-    dotStyle: $("dotStyle").value,
-    size: Number($("size").value),
-    filename: $("filename").value,
-    centerType,
-    text: $("centerText").value,
-  };
+      function getCornerType(dotStyle) {
+        if (dotStyle === "dots") return "dot";
+        if (dotStyle === "square") return "square";
+        return "extra-rounded";
+      }
 
-  try {
-    if (!body.url.trim()) throw new Error("Vpiši URL / vsebino kode.");
-    if (centerType === "image") {
-      const f = $("logoFile").files[0];
-      if (!f) throw new Error("Izberi datoteko s sliko za sredino.");
-      body.imageData = await fileToDataUrl(f);
-    }
-    if (centerType === "text" && !body.text.trim())
-      throw new Error("Vpiši tekst za sredino.");
+      function generateQr() {
+        const url = document.getElementById("url").value.trim();
+        const size = Number(document.getElementById("size").value) || 1000;
+        const color = document.getElementById("color").value;
+        const bg = document.getElementById("bg").value;
+        const cornerColor = document.getElementById("cornerColor").value;
+        const gradient2 = document.getElementById("gradient2").value;
+        const useGradient = document.getElementById("useGradient").checked;
+        const dotStyle = document.getElementById("dotStyle").value;
+        const centerType = document.getElementById("centerType").value;
+        const centerText = document.getElementById("centerText").value.trim();
 
-    $("run").disabled = true;
-    $("run").textContent = "Generiram ...";
+        if (!url) {
+          alert("Vnesi URL ali vsebino QR kode.");
+          return;
+        }
 
-    const res = await fetch("/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Napaka strežnika");
+        const dotsOptions = useGradient
+          ? {
+              type: dotStyle,
+              gradient: {
+                type: "linear",
+                rotation: Math.PI / 4,
+                colorStops: [
+                  { offset: 0, color },
+                  { offset: 1, color: gradient2 },
+                ],
+              },
+            }
+          : {
+              type: dotStyle,
+              color,
+            };
 
-    $("result").innerHTML = `
-      <img src="${data.image}" alt="QR koda">
-      <div class="path">Shranjeno: ${data.savedPath} (${data.size} × ${data.size} px)</div>
-      <a class="dl" href="${data.image}" download="${data.filename}">Prenesi PNG</a>`;
-  } catch (err) {
-    errBox.textContent = err.message;
-    errBox.hidden = false;
-  } finally {
-    $("run").disabled = false;
-    $("run").textContent = "Zaženi";
-  }
-});
-</script>
-</body>
+        const image =
+          centerType === "image" && logoDataUrl ? logoDataUrl : undefined;
+
+        qrCode = new QRCodeStyling({
+          width: size,
+          height: size,
+          type: "canvas",
+          data: url,
+          margin: Math.round(size * 0.03),
+          qrOptions: {
+            errorCorrectionLevel: "H",
+          },
+          dotsOptions,
+          backgroundOptions: {
+            color: bg,
+          },
+          cornersSquareOptions: {
+            type: getCornerType(dotStyle),
+            color: cornerColor,
+          },
+          cornersDotOptions: {
+            color: cornerColor,
+          },
+          image,
+          imageOptions: {
+            crossOrigin: "anonymous",
+            margin: 8,
+            imageSize: 0.28,
+            hideBackgroundDots: true,
+          },
+        });
+
+        const qrContainer = document.getElementById("qr");
+        qrContainer.innerHTML = "";
+        qrCode.append(qrContainer);
+
+        if (centerType === "text" && centerText) {
+          setTimeout(() => addCenterText(centerText, color, bg), 200);
+        }
+      }
+
+      function addCenterText(text, color, bg) {
+        const canvas = document.querySelector("#qr canvas");
+        if (!canvas) return;
+
+        const ctx = canvas.getContext("2d");
+        const size = canvas.width;
+        const boxSize = Math.round(size * 0.26);
+        const x = (size - boxSize) / 2;
+        const y = (size - boxSize) / 2;
+        const r = Math.round(boxSize * 0.18);
+
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + boxSize, y, x + boxSize, y + boxSize, r);
+        ctx.arcTo(x + boxSize, y + boxSize, x, y + boxSize, r);
+        ctx.arcTo(x, y + boxSize, x, y, r);
+        ctx.arcTo(x, y, x + boxSize, y, r);
+        ctx.closePath();
+        ctx.fillStyle = bg;
+        ctx.fill();
+
+        ctx.fillStyle = color;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        let fontSize = Math.round(boxSize * 0.45);
+
+        do {
+          ctx.font = `bold ${fontSize}px Arial`;
+          fontSize -= 2;
+        } while (ctx.measureText(text).width > boxSize * 0.8 && fontSize > 10);
+
+        ctx.fillText(text, size / 2, size / 2);
+      }
+
+      function downloadQr() {
+        const canvas = document.querySelector("#qr canvas");
+
+        if (!canvas) {
+          alert("Najprej generiraj QR kodo.");
+          return;
+        }
+
+        const filenameInput = document.getElementById("filename").value.trim();
+        const filename = filenameInput.endsWith(".png")
+          ? filenameInput
+          : `${filenameInput || "qr-koda"}.png`;
+
+        const link = document.createElement("a");
+        link.download = filename;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      }
+
+      generateQr();
+    </script>
+  </body>
 </html>
