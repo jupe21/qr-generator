@@ -232,46 +232,44 @@ $("theme").addEventListener("change", () => {
 
 // --- generiranje (vse client-side) ---
 
-// Datoteko preberemo kot data URL (rabimo ga za vgradnjo v SVG) in iz njega
-// naredimo Image za risanje na canvas / branje dimenzij.
-function loadImageFromFile(file) {
+// Datoteko preberemo kot data URL — knjižnica ga sama vgradi v QR
+// (deluje za canvas/PNG in za SVG izvoz).
+function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
     const fr = new FileReader();
     fr.onerror = () => reject(new Error("Slike ni bilo mogoče prebrati."));
-    fr.onload = () => {
-      const img = new Image();
-      img.onload = () => resolve({ img, dataUrl: fr.result });
-      img.onerror = () => reject(new Error("Slike ni bilo mogoče prebrati."));
-      img.src = fr.result;
-    };
+    fr.onload = () => resolve(fr.result);
     fr.readAsDataURL(file);
   });
 }
 
-function blobToImage(blob) {
+function blobToDataUrl(blob) {
   return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = URL.createObjectURL(blob);
+    const fr = new FileReader();
+    fr.onerror = reject;
+    fr.onload = () => resolve(fr.result);
+    fr.readAsDataURL(blob);
   });
 }
 
-// Zaobljena podlaga v barvi ozadja na sredini, da vsebina ne seka pik.
-// Vsebina pokrije ~7 % površine — errorCorrectionLevel "H" (30 %) to zlahka prenese.
-function drawCenterPlate(ctx, size, bg) {
-  const { boxSize, box, boxX, r } = centerGeometry(size);
-  const boxY = boxX;
-  ctx.beginPath();
-  ctx.moveTo(boxX + r, boxY);
-  ctx.arcTo(boxX + boxSize, boxY, boxX + boxSize, boxY + boxSize, r);
-  ctx.arcTo(boxX + boxSize, boxY + boxSize, boxX, boxY + boxSize, r);
-  ctx.arcTo(boxX, boxY + boxSize, boxX, boxY, r);
-  ctx.arcTo(boxX, boxY, boxX + boxSize, boxY, r);
-  ctx.closePath();
-  ctx.fillStyle = bg;
-  ctx.fill();
-  return box;
+// Tekst narišemo na prosojno sliko in jo podamo knjižnici po isti poti kot
+// logo — hideBackgroundDots potem skrije cele module pod njim, namesto da bi
+// podlaga rezala pike na pol.
+function textToDataUrl(text, color) {
+  const measure = document.createElement("canvas").getContext("2d");
+  measure.font = "bold 200px sans-serif";
+  const w = Math.ceil(measure.measureText(text).width);
+
+  const c = document.createElement("canvas");
+  c.width = Math.max(w + 40, 240);
+  c.height = 260;
+  const ctx = c.getContext("2d");
+  ctx.font = "bold 200px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = color;
+  ctx.fillText(text, c.width / 2, c.height / 2);
+  return c.toDataURL();
 }
 
 function qrConfig(opts) {
@@ -294,7 +292,7 @@ function qrConfig(opts) {
   const cornerSquareType =
     opts.dotStyle === "dots" ? "dot" : opts.dotStyle === "square" ? "square" : "extra-rounded";
 
-  return {
+  const config = {
     width: opts.size,
     height: opts.size,
     type: "canvas",
@@ -306,68 +304,30 @@ function qrConfig(opts) {
     cornersSquareOptions: { type: cornerSquareType, color: cornerColor },
     cornersDotOptions: { color: cornerColor },
   };
-}
 
-// Ista geometrija sredine za PNG (canvas) in SVG (elementi).
-function centerGeometry(size) {
-  const boxSize = Math.round(size * 0.26);
-  const margin = Math.round(size * 0.02);
-  return {
-    boxSize,
-    box: boxSize - 2 * margin,
-    boxX: (size - boxSize) / 2,
-    r: Math.round(boxSize * 0.18),
-  };
-}
+  // Logo/tekst vgradi knjižnica: hideBackgroundDots skrije cele module pod
+  // sliko, tako da okoliške pike ostanejo nedotaknjene (nič ni odrezano).
+  if (opts.imageDataUrl) {
+    config.image = opts.imageDataUrl;
+    config.imageOptions = {
+      hideBackgroundDots: true,
+      imageSize: 0.3,
+      margin: Math.round(opts.size * 0.012),
+      crossOrigin: "anonymous",
+    };
+  }
 
-function fitFontSize(text, box) {
-  const ctx = document.createElement("canvas").getContext("2d");
-  let fontSize = Math.round(box * 0.6);
-  do {
-    ctx.font = `bold ${fontSize}px sans-serif`;
-    fontSize -= 2;
-  } while (ctx.measureText(text).width > box && fontSize > 8);
-  return fontSize + 2;
-}
-
-function escapeXml(s) {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return config;
 }
 
 async function generate(opts) {
   const qr = new QRCodeStyling(qrConfig(opts));
-
   const blob = await qr.getRawData("png");
-  const qrImg = await blobToImage(blob);
-
-  const canvas = document.createElement("canvas");
-  canvas.width = opts.size;
-  canvas.height = opts.size;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(qrImg, 0, 0, opts.size, opts.size);
-
-  if (opts.logoImg) {
-    const box = drawCenterPlate(ctx, opts.size, opts.bg);
-    const iw = opts.logoImg.naturalWidth || opts.logoImg.width;
-    const ih = opts.logoImg.naturalHeight || opts.logoImg.height;
-    const scale = Math.min(box / iw, box / ih);
-    const w = iw * scale, h = ih * scale;
-    ctx.drawImage(opts.logoImg, (opts.size - w) / 2, (opts.size - h) / 2, w, h);
-  } else if (opts.text) {
-    const box = drawCenterPlate(ctx, opts.size, opts.bg);
-    ctx.fillStyle = opts.gradientStops ? opts.gradientStops[0] : opts.color;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = `bold ${fitFontSize(opts.text, box)}px sans-serif`;
-    ctx.fillText(opts.text, opts.size / 2, opts.size / 2);
-  }
-
-  return canvas.toDataURL("image/png");
+  return blobToDataUrl(blob);
 }
 
-// SVG izvoz: knjižnica vrne QR kot SVG, sredino (podlaga + logo/tekst)
-// vrinemo kot SVG elemente pred zapiralni tag. Logo je vgrajen kot data URL,
-// zato je datoteka samozadostna.
+// SVG izvoz: knjižnica sama vgradi logo/tekst (kot data URL) in skrije
+// module pod njim, zato je datoteka samozadostna.
 async function generateSvg(opts) {
   const qr = new QRCodeStyling({ ...qrConfig(opts), type: "svg" });
   const blob = await qr.getRawData("svg");
@@ -376,25 +336,6 @@ async function generateSvg(opts) {
   // Za tisk/urejevalnike dodamo eksplicitne dimenzije, če jih knjižnica ni.
   if (!/<svg[^>]*\swidth=/.test(svg)) {
     svg = svg.replace("<svg ", `<svg width="${opts.size}" height="${opts.size}" `);
-  }
-
-  if (opts.logoImg || opts.text) {
-    const { boxSize, box, boxX, r } = centerGeometry(opts.size);
-    let extra = `<rect x="${boxX}" y="${boxX}" width="${boxSize}" height="${boxSize}" rx="${r}" fill="${opts.bg}"/>`;
-
-    if (opts.logoImg) {
-      const iw = opts.logoImg.naturalWidth || opts.logoImg.width;
-      const ih = opts.logoImg.naturalHeight || opts.logoImg.height;
-      const scale = Math.min(box / iw, box / ih);
-      const w = iw * scale;
-      const h = ih * scale;
-      extra += `<image href="${opts.logoDataUrl}" x="${(opts.size - w) / 2}" y="${(opts.size - h) / 2}" width="${w}" height="${h}"/>`;
-    } else {
-      const fill = opts.gradientStops ? opts.gradientStops[0] : opts.color;
-      extra += `<text x="${opts.size / 2}" y="${opts.size / 2}" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-weight="bold" font-size="${fitFontSize(opts.text, box)}" fill="${fill}">${escapeXml(opts.text)}</text>`;
-    }
-
-    svg = svg.replace("</svg>", `${extra}</svg>`);
   }
 
   return svg;
@@ -435,12 +376,12 @@ $("run").addEventListener("click", async () => {
     if (centerType === "image") {
       const f = $("logoFile").files[0];
       if (!f) throw new Error("Izberi datoteko s sliko za sredino.");
-      const loaded = await loadImageFromFile(f);
-      opts.logoImg = loaded.img;
-      opts.logoDataUrl = loaded.dataUrl;
+      opts.imageDataUrl = await fileToDataUrl(f);
     } else if (centerType === "text") {
-      opts.text = $("centerText").value.trim();
-      if (!opts.text) throw new Error("Vpiši tekst za sredino.");
+      const text = $("centerText").value.trim();
+      if (!text) throw new Error("Vpiši tekst za sredino.");
+      const textColor = opts.gradientStops ? opts.gradientStops[0] : opts.color;
+      opts.imageDataUrl = textToDataUrl(text, textColor);
     }
 
     $("run").disabled = true;
