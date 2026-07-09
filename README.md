@@ -11,6 +11,16 @@ tako da ostanejo berljive kljub logu čez sredino (logo pokrije ~7 % površine, 
 npm install
 ```
 
+> Opomba: `package.json` vsebuje samo odvisnosti za statični deploy. Za lokalni
+> CLI (`qrcode.js`) ali lokalni strežnik (`server.js`) namesti še:
+> `npm install --no-save canvas jsdom`
+
+## Statična stran (za deploy)
+
+Mapa `site/` je samostojna statična stran — vse (PNG **in SVG** izvoz) se
+generira v obiskovalčevem brskalniku, strežnik ni potreben. Deploy: usmeri
+Vercel/Netlify na mapo `site/` in dodaj poddomeno (npr. `qr-generator.n3x7.si`).
+
 ## Web UI (najlažji način)
 
 ```bash

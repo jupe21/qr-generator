@@ -51,6 +51,8 @@ function sendJson(res, status, data) {
 }
 
 function validate(body) {
+  const { DOT_STYLES, DEFAULTS } = getGenerateModule();
+
   if (!body.url || typeof body.url !== "string" || !body.url.trim()) {
     throw new Error("URL / vsebina kode je obvezna");
   }
@@ -93,6 +95,7 @@ async function handleGenerate(req, res) {
   }
 
   try {
+    const { generateQr, DEFAULTS } = getGenerateModule();
     const size = validate(body);
 
     const opts = {
@@ -181,6 +184,8 @@ async function handler(req, res) {
 
       res.end(fs.readFileSync(path.join(__dirname, "public", "index.html")));
     } else if (req.method === "GET" && req.url === "/config") {
+      const { THEMES, DOT_STYLES, DEFAULTS } = getGenerateModule();
+
       sendJson(res, 200, {
         themes: THEMES,
         dotStyles: DOT_STYLES,
