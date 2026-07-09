@@ -7,8 +7,15 @@
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
-const { generateQr, THEMES, DOT_STYLES, DEFAULTS } = require("./generate");
+let generateModule = null;
 
+function getGenerateModule() {
+  if (!generateModule) {
+    generateModule = require("./generate");
+  }
+
+  return generateModule;
+}
 const PORT = process.env.PORT || 3777;
 const OUT_DIR = path.join(__dirname, "izhod");
 const MAX_BODY = 25 * 1024 * 1024; // 25 MB (logo se pošlje kot base64)

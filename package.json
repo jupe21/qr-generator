@@ -1,16 +1,12 @@
 {
   "name": "qr-styler",
   "version": "1.0.0",
-  "description": "CLI orodje za generiranje styliziranih QR kod z logotipom na sredini",
-  "main": "qrcode.js",
+  "description": "QR generator",
   "scripts": {
-    "generate": "node qrcode.js",
     "web": "node server.js"
   },
   "license": "MIT",
   "dependencies": {
-    "canvas": "^3.2.3",
-    "jsdom": "^29.1.1",
     "qr-code-styling": "^1.6.0-rc.1"
   }
 }
