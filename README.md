@@ -17,9 +17,10 @@ npm install
 
 ## Statična stran (za deploy)
 
-Mapa `site/` je samostojna statična stran — vse (PNG **in SVG** izvoz) se
-generira v obiskovalčevem brskalniku, strežnik ni potreben. Deploy: usmeri
-Vercel/Netlify na mapo `site/` in dodaj poddomeno (npr. `qr-generator.n3x7.si`).
+`public/index.html` je samostojna statična stran — vse (PNG **in SVG** izvoz)
+se generira v obiskovalčevem brskalniku, strežnik ni potreben. Vercel privzeto
+streže mapo `public/`, zato je dovolj push na GitHub in deploy se posodobi.
+Ista datoteka služi tudi lokalnemu strežniku (`node server.js`).
 
 ## Web UI (najlažji način)
 
